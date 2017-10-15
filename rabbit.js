@@ -8,16 +8,7 @@ document.body.appendChild(canvas);
 let context =  canvas.getContext('2d'); 
 
 const game = {
-	drawBackground: function() {/*
-		context.fillStyle = '#55E'; context.fillRect(0,0,canvas.width,canvas.height); context.fillStyle = '#909'; context.fillRect(0,400,canvas.width,100); */
-		context.drawImage(game.img.terrain, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-		//context.drawImage(rabbit.image, rabbit.img.x, rabbit.img.y, rabbit.width, rabbit.height, rabbit.x, rabbit.y, rabbit.width, rabbit.height);
-		//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
-		context.fillStyle = 'black';
-		context.fillRect(game.edge.left, 0, 1, canvas.height);
-		context.fillRect(game.edge.right, 0, 1, canvas.height);
-	},
-	speed: 20,
+	speed: 15,
 	active: true,
 	edge: {
 		width: 330,
@@ -25,6 +16,18 @@ const game = {
 		right: 570
 	},
 	width: 4548,
+	drawBackground: function() {/*
+		context.fillStyle = '#55E'; context.fillRect(0,0,canvas.width,canvas.height); context.fillStyle = '#909'; context.fillRect(0,400,canvas.width,100); */
+		context.drawImage(game.img.terrain, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+		//context.drawImage(rabbit.image, rabbit.img.x, rabbit.img.y, rabbit.width, rabbit.height, rabbit.x, rabbit.y, rabbit.width, rabbit.height);
+		//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
+		//context.fillStyle = 'black';
+		//context.fillRect(game.edge.left, 0, 1, canvas.height);
+		//context.fillRect(game.edge.right, 0, 1, canvas.height);
+	},
+	drawGrass: function() {
+		context.drawImage(game.img.grass, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+	},
 	pauseandresume: function() {
 		game.active = !game.active;
 		if (game.active) {
@@ -68,10 +71,24 @@ const game = {
 		x: 0,
 		y: 0,
 		height: canvas.height,
-		terrain: new Image()
+		terrain: new Image(),
+		grass: new Image()
+	},
+	sounds: {
+		gumblasts: [
+			new Audio('audio/gumblast.wav'),
+			new Audio('audio/gumblast2.wav'),
+			new Audio('audio/gumblast3.wav'),
+			new Audio('audio/gumblast4.wav'),
+			new Audio('audio/gumblast5.wav'),
+			new Audio('audio/gumblast6.wav'),
+			new Audio('audio/gumblast7.wav')
+		],
+		gumstep: 0
 	}
 }
 game.img.terrain.src='sprites/level_one.png';
+game.img.grass.src='sprites/grassoverlay_2.png';
 
 const rabbit = {
 	alive: true,
@@ -156,8 +173,21 @@ const rabbit = {
 		spin: false,
 		stash: [],
 		speed: 10,
-		size: 2,
+		size: 3,
+		colors: [
+			'#00A6FF', // blue
+			'#A0F', // purple
+			'#04D608', // green
+			'#FAE900', // yellow
+			'#FA0000', // red
+			'#FFA200', // orange
+			'#0800FF', // dark blue
+			'#F0E', // pink
+		],
 		fire: function() {
+			(game.sounds.gumstep === 6) ? game.sounds.gumstep = 0 : game.sounds.gumstep++;
+			game.sounds.gumblasts[game.sounds.gumstep].play();
+
 			rabbit.laser.charge--;
 			let laserx, lasery, laserh, laserv;
 
@@ -166,7 +196,7 @@ const rabbit = {
 			} else {
 				laserx = rabbit.x + rabbit.width;
 			}
-			lasery = rabbit.y + rabbit.height /2;
+			lasery = Math.floor(rabbit.y + rabbit.height/4 + Math.random() * rabbit.height/2);
 
 			if (rabbit.jump.active && rabbit.laser.spin) {
 				[laserh, laserv] = rabbit.laser.setSpin([laserh, laserv])	
@@ -178,11 +208,38 @@ const rabbit = {
 				x:laserx,
 				y:lasery,
 				h: laserh,
-				v: laserv
+				v: laserv,
+				color: rabbit.laser.colors[Math.floor(Math.random() * rabbit.laser.colors.length)]
+			});
+		},
+		fire2: function() {
+			rabbit.laser.charge--;
+			let laserx, lasery, laserh, laserv;
+
+			if (rabbit.img.dir === 'left') {
+				laserx = rabbit.x;
+			} else {
+				laserx = rabbit.x + rabbit.width;
+			}
+			lasery = Math.floor(rabbit.y + rabbit.height/4 + Math.random() * rabbit.height/2);
+			if (rabbit.jump.active && rabbit.laser.spin) {
+				[laserh, laserv] = rabbit.laser.setSpin([laserh, laserv])	
+			} else {
+				(rabbit.img.dir === 'right') ? laserh = rabbit.laser.speed : laserh = -rabbit.laser.speed;
+				laserv = 0;
+			}
+			rabbit.laser.stash.push({
+				x:laserx,
+				y:lasery,
+				h: laserh,
+				v: laserv,
+				color: rabbit.laser.colors[Math.floor(Math.random() * rabbit.laser.colors.length)]
 			});
 		},
 		doubleFire: function() {
-			console.log(' double FIRE')
+			(game.sounds.gumstep === 6) ? game.sounds.gumstep = 0 : game.sounds.gumstep++;
+			game.sounds.gumblasts[game.sounds.gumstep].play();
+			
 			rabbit.laser.charge--;
 			let laserx, lasery, laserh, laserv, laserh_2, laserv_2;
 
@@ -191,49 +248,55 @@ const rabbit = {
 			} else {
 				laserx = rabbit.x + rabbit.width;
 			}
-			lasery = rabbit.y + rabbit.height /2;
+			lasery = Math.floor(rabbit.y + rabbit.height/4 + Math.random() * rabbit.height/2);
 
-			if (rabbit.jump.active && rabbit.laser.spin) {
-				[laserh, laserv] = rabbit.laser.setSpin([laserh, laserv])	
-			} else {
-				(rabbit.img.dir === 'right') ? laserh = rabbit.laser.speed : laserh = -rabbit.laser.speed;
-				laserv = 0;
-			}
+			[laserh, laserv] = rabbit.laser.setSpin([laserh, laserv]);
+
+
 			rabbit.laser.stash.push({
-				x:laserx,
-				y:lasery,
-				h: laserh,
-				v: laserv
+				x: laserx,
+				y: lasery,
+				h: laserh[0],
+				v: laserv[1],
+				color: rabbit.laser.colors[Math.floor(Math.random() * rabbit.laser.colors.length)]
 			});
 
-			(laserh < 0) ? laserh_2 = Math.abs(laserh) : (laserh > 0) ? laserh_2 = laserh * -2 : null;
-			(laserv < 0) ? laserv_2 = Math.abs(laserv) : (laserv > 0) ? laserv_2 = laserv * -2 : null;
-			console.log(laserh + ' ' + laserh_2);
-			console.log(laserv + ' ' + laserv_2);
-
 			rabbit.laser.stash.push({
-				x:laserx,
-				y:lasery,
-				h: laserh_2,
-				v: laserv_2
+				x: laserx,
+				y: lasery,
+				h: laserv[1],
+				v: laserh[0],
+				color: rabbit.laser.colors[Math.floor(Math.random() * rabbit.laser.colors.length)]
 			});
 		},
 		setSpin: function(arr) {
 			if (rabbit.img.x === 90 || rabbit.img.x === 270) {
-				if (rabbit.img.x === 90 && rabbit.img.y === 140 || rabbit.img.x === 270 && rabbit.img.y === 175) return [-rabbit.laser.speed, 0];
-				if (rabbit.img.x === 270 && rabbit.img.y === 140 || rabbit.img.x === 90 && rabbit.img.y === 175) return [rabbit.laser.speed, 0];
+				return [ 
+					[-rabbit.laser.speed, 0], 
+					[rabbit.laser.speed, 0]
+				];
 			} else if (rabbit.img.x === 0 || rabbit.img.x === 180) {
-				if (rabbit.img.x === 0 && rabbit.img.y === 140 || rabbit.img.x === 180 && rabbit.img.y === 175) return [0, -rabbit.laser.speed];
-				if (rabbit.img.x === 180 && rabbit.img.y === 140 || rabbit.img.x === 0 && rabbit.img.y === 175) return [0, rabbit.laser.speed];
+				return [ 
+					[0, -rabbit.laser.speed], 
+					[0, rabbit.laser.speed] 
+				];
+
 			} else {
-				if (rabbit.img.x === 45 && rabbit.img.y === 140 || rabbit.img.x === 315 && rabbit.img.y === 175) return [-rabbit.laser.speed/2, rabbit.laser.speed/2];
-				if (rabbit.img.x === 135 && rabbit.img.y === 140 || rabbit.img.x === 225 && rabbit.img.y === 175) return [-rabbit.laser.speed/2, -rabbit.laser.speed/2];
-				if (rabbit.img.x === 225 && rabbit.img.y === 140 || rabbit.img.x === 135 && rabbit.img.y === 175) return [rabbit.laser.speed/2, -rabbit.laser.speed/2];
-				if (rabbit.img.x === 315 && rabbit.img.y === 140 || rabbit.img.x === 45 && rabbit.img.y === 175) return [rabbit.laser.speed/2, rabbit.laser.speed/2];
+				if ( ( rabbit.img.y === 140 && ( rabbit.img.x === 45 || rabbit.img.x === 225 ) ) || ( rabbit.img.y === 175 && ( rabbit.img.x === 135 || rabbit.img.x === 315 )) ) { // //
+					return [  // //
+						[-rabbit.laser.speed/2, rabbit.laser.speed/2], 
+						[rabbit.laser.speed/2, -rabbit.laser.speed/2] 
+					];
+				} else if ( ( rabbit.img.y === 140 && ( rabbit.img.x === 135 || rabbit.img.x === 315) ) || ( rabbit.img.y === 175 && ( rabbit.img.x === 45 || rabbit.img.x === 225 )) ) {
+					return [  // \\\\\\\\\\\\\\\\
+						[rabbit.laser.speed/2, -rabbit.laser.speed/2],
+						[-rabbit.laser.speed/2, rabbit.laser.speed/2]
+					]
+				}
 			}
 		},
-		draw: function(x,y,s) {
-			context.fillStyle = 'red';
+		draw: function(x,y,s,c) {
+			context.fillStyle = c;
 			context.beginPath();
 			context.arc(x, y, s, 0, 2 * Math.PI);
 			context.fill();
@@ -248,7 +311,7 @@ const rabbit = {
 						const removeBlast = rabbit.laser.stash.indexOf(rabbit.laser.stash[blast]);
 						rabbit.laser.stash.splice(removeBlast,1);
 					} else {
-						rabbit.laser.draw(rabbit.laser.stash[blast].x, rabbit.laser.stash[blast].y, rabbit.laser.size);
+						rabbit.laser.draw(rabbit.laser.stash[blast].x, rabbit.laser.stash[blast].y, rabbit.laser.size, rabbit.laser.stash[blast].color);
 					}
 				}
 			}
@@ -274,6 +337,7 @@ function gameLoop() {
 	game.drawBackground();
 	rabbit.adjust();
 	rabbit.draw();
+	game.drawGrass();
 }
 
 
@@ -299,7 +363,7 @@ function keyPushed(btn) {
 	}
 	if (btn.keyCode === 38 && !rabbit.jump.active) rabbit.jump.up();
 	if (btn.keyCode === 40) rabbit.v = rabbit.speed;
-	if (btn.keyCode === 67 && rabbit.laser.charge > 0) {
+	if (btn.keyCode === 67 && rabbit.laser.charge > 0 && rabbit.jump.active) {
 		if (!rabbit.laser.spin) rabbit.laser.spin= true;
 		rabbit.laser.doubleFire();
 	}
