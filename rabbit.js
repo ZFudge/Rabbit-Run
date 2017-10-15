@@ -38,7 +38,6 @@ const game = {
 	},
 	scrollAdjust: function() {
 		if (rabbit.x < game.edge.left) {  // LEFT 
-			console.log('left side');
 			if (game.img.x > 0) {
 				if (rabbit.h < 0) {
 					game.img.x += rabbit.h;
@@ -46,7 +45,6 @@ const game = {
 					rabbit.x += rabbit.h;
 				}
 			} else if (rabbit.x > 0) {
-				console.log('all the way left');
 				if (rabbit.x > 5) {
 					rabbit.x += rabbit.h;
 				} else {
@@ -54,17 +52,14 @@ const game = {
 				}
 			}
 		} else if (rabbit.x + rabbit.width < game.edge.right) { // MIDDLE
-			console.log('between');
 			rabbit.x += rabbit.h;
 		} else if (game.img.x + canvas.width < game.width) { // RIGHT !!!!!!!!!!!
-			console.log('right side');
 			if (rabbit.h > 0) {
 				game.img.x += rabbit.h;
 			} else if (rabbit.h < 0) {
 				rabbit.x += rabbit.h;
 			}
 		} else {
-			console.log('all the way right');
 			rabbit.x += rabbit.h;
 		}
 		rabbit.y += rabbit.v;
@@ -111,7 +106,7 @@ const rabbit = {
 	},
 	jump: {
 		active: false,
-		height: 50,
+		height: 100,
 		begin: null,
 		end: null,
 		rising: true,
@@ -179,7 +174,6 @@ const rabbit = {
 				(rabbit.img.dir === 'right') ? laserh = rabbit.laser.speed : laserh = -rabbit.laser.speed;
 				laserv = 0;
 			}
-			//console.log('x:' + laserx + ', y: ' + lasery + ' h: ' + laserh + ' v: ' + laserv);
 			rabbit.laser.stash.push({
 				x:laserx,
 				y:lasery,
@@ -187,8 +181,44 @@ const rabbit = {
 				v: laserv
 			});
 		},
+		doubleFire: function() {
+			console.log(' double FIRE')
+			rabbit.laser.charge--;
+			let laserx, lasery, laserh, laserv, laserh_2, laserv_2;
+
+			if (rabbit.img.dir === 'left') {
+				laserx = rabbit.x;
+			} else {
+				laserx = rabbit.x + rabbit.width;
+			}
+			lasery = rabbit.y + rabbit.height /2;
+
+			if (rabbit.jump.active && rabbit.laser.spin) {
+				[laserh, laserv] = rabbit.laser.setSpin([laserh, laserv])	
+			} else {
+				(rabbit.img.dir === 'right') ? laserh = rabbit.laser.speed : laserh = -rabbit.laser.speed;
+				laserv = 0;
+			}
+			rabbit.laser.stash.push({
+				x:laserx,
+				y:lasery,
+				h: laserh,
+				v: laserv
+			});
+
+			(laserh < 0) ? laserh_2 = Math.abs(laserh) : (laserh > 0) ? laserh_2 = laserh * -2 : null;
+			(laserv < 0) ? laserv_2 = Math.abs(laserv) : (laserv > 0) ? laserv_2 = laserv * -2 : null;
+			console.log(laserh + ' ' + laserh_2);
+			console.log(laserv + ' ' + laserv_2);
+
+			rabbit.laser.stash.push({
+				x:laserx,
+				y:lasery,
+				h: laserh_2,
+				v: laserv_2
+			});
+		},
 		setSpin: function(arr) {
-			console.log('x: ' + rabbit.img.x + ', y: ' + rabbit.img.y);
 			if (rabbit.img.x === 90 || rabbit.img.x === 270) {
 				if (rabbit.img.x === 90 && rabbit.img.y === 140 || rabbit.img.x === 270 && rabbit.img.y === 175) return [-rabbit.laser.speed, 0];
 				if (rabbit.img.x === 270 && rabbit.img.y === 140 || rabbit.img.x === 90 && rabbit.img.y === 175) return [rabbit.laser.speed, 0];
@@ -214,12 +244,12 @@ const rabbit = {
 					rabbit.laser.stash[blast].x += rabbit.laser.stash[blast].h;
 					rabbit.laser.stash[blast].y += rabbit.laser.stash[blast].v;
 
-
-					rabbit.laser.draw(rabbit.laser.stash[blast].x, rabbit.laser.stash[blast].y, rabbit.laser.size);
-					/*
-					(rabbit.laser.stash[blast].dir === 0) ? rabbit.laser.stash[blast].x -= rabbit.laser[blast].h : rabbit.laser.stash[blast].x += rabbit.laser[blast].h;
-					rabbit.laser.draw(rabbit.laser.stash[blast].x, rabbit.laser.stash[blast].y, rabbit.laser.width, rabbit.laser.height);
-					*/
+					if (rabbit.laser.stash[blast].x < 0 || rabbit.laser.stash[blast].x > canvas.width || rabbit.laser.stash[blast].y < 0 || rabbit.laser.stash[blast].y > canvas.height - 100) {
+						const removeBlast = rabbit.laser.stash.indexOf(rabbit.laser.stash[blast]);
+						rabbit.laser.stash.splice(removeBlast,1);
+					} else {
+						rabbit.laser.draw(rabbit.laser.stash[blast].x, rabbit.laser.stash[blast].y, rabbit.laser.size);
+					}
 				}
 			}
 		}
@@ -271,7 +301,7 @@ function keyPushed(btn) {
 	if (btn.keyCode === 40) rabbit.v = rabbit.speed;
 	if (btn.keyCode === 67 && rabbit.laser.charge > 0) {
 		if (!rabbit.laser.spin) rabbit.laser.spin= true;
-		rabbit.laser.fire();
+		rabbit.laser.doubleFire();
 	}
 	if (btn.keyCode === 70 && rabbit.laser.charge > 0) rabbit.laser.fire();
 	if (btn.keyCode === 81) game.pauseandresume();
