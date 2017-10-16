@@ -10,6 +10,7 @@ let context =  canvas.getContext('2d');
 const game = {
 	speed: 15,
 	active: true,
+	groundlevel: 400,
 	edge: {
 		width: 330,
 		left: 330,
@@ -20,7 +21,6 @@ const game = {
 		context.fillStyle = '#55E'; context.fillRect(0,0,canvas.width,canvas.height); context.fillStyle = '#909'; context.fillRect(0,400,canvas.width,100); */
 		context.drawImage(game.img.terrain, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 		//context.drawImage(rabbit.image, rabbit.img.x, rabbit.img.y, rabbit.width, rabbit.height, rabbit.x, rabbit.y, rabbit.width, rabbit.height);
-		//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
 		//context.fillStyle = 'black';
 		//context.fillRect(game.edge.left, 0, 1, canvas.height);
 		//context.fillRect(game.edge.right, 0, 1, canvas.height);
@@ -74,7 +74,28 @@ const game = {
 		terrain: new Image(),
 		grass: new Image()
 	},
+	enemies: [],
+	drawEnemies: function() {
+		if (game.enemies.length > 0) {
+			for (let enemy in game.enemies) {
+				if (game.enemies[enemy].alive) {
+					context.drawImage(rabbit.image, game.enemies[enemy].img.x, game.enemies[enemy].img.y, game.enemies[enemy].width, game.enemies[enemy].height, game.enemies[enemy].x, game.enemies[enemy].y, game.enemies[enemy].width, game.enemies[enemy].height );
+					(game.enemies[enemy].img.steps < 7) ? game.enemies[enemy].img.steps++ : game.enemies[enemy].img.steps = 0;
+					game.enemies[enemy].img.x = game.enemies[enemy].img.steps * 45;
+					//context.drawImage(game.img.terrain, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+					//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
+					EnemyFuncs.adjust(game.enemies[enemy]);
+					EnemyFuncs.damageCheck(game.enemies[enemy]);
+					//EnemyFuncs.adjust(game.enemies[enemy]);
+				} else {
+					const removeEnemy = game.enemies.indexOf(game.enemies[enemy]);
+						game.enemies.splice(removeEnemy,1);
+				}
+			}
+		}
+	},
 	sounds: {
+		theme: new Audio('audio/theme.mp3'),
 		gumblasts: [
 			new Audio('audio/gumblast.wav'),
 			new Audio('audio/gumblast2.wav'),
@@ -307,13 +328,15 @@ const rabbit = {
 					rabbit.laser.stash[blast].x += rabbit.laser.stash[blast].h;
 					rabbit.laser.stash[blast].y += rabbit.laser.stash[blast].v;
 
-					if (rabbit.laser.stash[blast].x < 0 || rabbit.laser.stash[blast].x > canvas.width || rabbit.laser.stash[blast].y < 0 || rabbit.laser.stash[blast].y > canvas.height - 100) {
+
+					if (EnemyFuncs.hitCheck(rabbit.laser.stash[blast], enemy1) || rabbit.laser.stash[blast].x < 0 || rabbit.laser.stash[blast].x > canvas.width || rabbit.laser.stash[blast].y < 0 || rabbit.laser.stash[blast].y > canvas.height - 100) {
 						const removeBlast = rabbit.laser.stash.indexOf(rabbit.laser.stash[blast]);
 						rabbit.laser.stash.splice(removeBlast,1);
 					} else {
 						rabbit.laser.draw(rabbit.laser.stash[blast].x, rabbit.laser.stash[blast].y, rabbit.laser.size, rabbit.laser.stash[blast].color);
 					}
 				}
+
 			}
 		}
 	}
@@ -333,10 +356,68 @@ rabbit.cycleAcrossImage = function() {
 	}
 }
 
+class Enemy {
+	constructor(x) {
+		this.alive = true;
+		this.y = 300;
+		this.x = x;
+		this.h = 0;
+		this.v = 0;
+		this.speed = 3;
+		this.range = 375;
+		this.height = 30;
+		this.width = 45;
+		this.health = 200;
+		this.img = {
+			steps: 0,
+			x: 0,
+			y: 280
+		}
+	}
+}
+
+const EnemyFuncs = {
+	adjust: function(en) {
+		if (en.alive) {
+			if (rabbit.x < en.x) {
+				if (en.x - rabbit.x > en.range) {
+					en.h = -en.speed;
+				}
+			} else {
+				if (rabbit.x - en.x > en.range) {
+					en.h = en.speed;
+				}
+			}
+			if (en.y + en.height < game.groundlevel) {
+				en.v = en.speed;
+			} else if (en.y + en.height > game.groundlevel) {
+				en.v = 0;
+			}
+
+			en.x += en.h;
+			en.y += en.v;
+		}
+	},
+	hitCheck: function(ball, en) {
+		console.log('hithceck')
+		if (ball.x > en.x && ball.x < en.x + en.width && ball.y > en.y && ball.y < en.y + en.height) {
+			en.health--;
+			return true;
+		}
+	},
+	damageCheck: function(en) {
+		if (en.health <= 0) en.alive = false;
+	}
+}
+// const playerTwo = new Player(game.playerTwoPos);
+const enemy1 = new Enemy(800);
+game.enemies.push(enemy1);
+
 function gameLoop() {
 	game.drawBackground();
 	rabbit.adjust();
 	rabbit.draw();
+	game.drawEnemies();
 	game.drawGrass();
 }
 
