@@ -118,9 +118,10 @@ const rabbit = {
 	v: 0,
 	width: 45,
 	height: 35,
+	earlevel: 372,
 	steps: 0,
 	speed: 3,
-	fallspeed: 2,
+	jumpSpeed: 5,
 	image: new Image(),
 	img: {
 		dir: 'right',
@@ -128,55 +129,60 @@ const rabbit = {
 		y: 140,
 		z: 0
 	},
+	health: {
+		level: 20
+	},
 	adjust: function() {
-		game.scrollAdjust();
+		rabbit.jump.adjust()
+		rabbit.runningOrRestingAdjust();
+		
+		rabbit.verticalAdjust();
 
-		if (rabbit.y >= 400 - rabbit.height + 7) {
-			rabbit.y = 400 - rabbit.height + 7;
+		rabbit.gum.adjust();
+	},
+	verticalAdjust:function() {
+		if (rabbit.y > rabbit.earlevel) {
+			rabbit.y = rabbit.earlevel;
+			rabbit.jump.units = rabbit.jump.height;
 			rabbit.v = 0;
 		} else if (!rabbit.jump.active) {
-			(rabbit.fallspeed < 5) ? rabbit.fallspeed *= 1.1 : rabbit.fallspeed = 5;
-			rabbit.v = rabbit.fallspeed;
+			(rabbit.v < 5) ? rabbit.v *= 1.1 : (rabbit.v > 0) ? rabbit.v = 5 : null;
+			rabbit.v = rabbit.jumpSpeed;
 		}
-		(rabbit.jump.active) ? rabbit.jump.adjust() : rabbit.restCheck();
-		rabbit.gum.adjust();
 	},
 	jump: {
 		active: false,
-		height: 100,
-		begin: null,
-		end: null,
-		rising: true,
+		height: 35,
 		up: function() {
-			rabbit.jump.rising = true;
-			rabbit.v = -rabbit.fallspeed;
-			rabbit.jump.begin = rabbit.y;
-			rabbit.jump.end = rabbit.y - rabbit.jump.height;
 			rabbit.jump.active = true;
+			rabbit.jump.units = rabbit.jump.height;
+			rabbit.v = -rabbit.jumpSpeed;
 			(rabbit.img.dir === 'right') ? rabbit.img.y = 140 : rabbit.img.y = 175; 
+			//rabbit.jump.rising = true; //rabbit.jump.be gin = rabbit.y //rabbit.jump.en d = rabbit.y - rabbit.jump.height;
 		},
 		adjust: function() {
-			if (rabbit.jump.rising) {
-				if (Math.abs(rabbit.y - rabbit.jump.end) < 10) {
-					if (rabbit.y > rabbit.jump.end) {
-						rabbit.v -= 0.3 
+			if (rabbit.jump.active) {
+				rabbit.jump.units--;
+				if (rabbit.jump.units < 10) {
+					if (rabbit.jump.units <=0) {
+						if (rabbit.v < rabbit.jumpSpeed) rabbit.v += 0.3;
+						rabbit.jump.active = false;
 					} else {
-						if (rabbit.v < rabbit.fallspeed) rabbit.v += 0.3;
-						rabbit.jump.rising = false;
+						rabbit.v *= 0.93;
 					}
-				}
+				} 
 			} else {
-				if (Math.abs(rabbit.jump.begin - rabbit.y) <= 0.3) {
+				if (rabbit.jump.units <= 0 && rabbit.jump.active) {
 					rabbit.v = 0;
 					rabbit.jump.active = false;
 				} else {
-					if (rabbit.v < rabbit.fallspeed) rabbit.v += 0.3;
+					if (rabbit.v < rabbit.jumpSpeed) rabbit.v *= 1.07;
 				}
 			}
 		}
 	},
-	restCheck: function() {
-		if (rabbit.y === 372 && rabbit.img.y > 105) {
+	runningOrRestingAdjust: function() {
+		if (rabbit.y === rabbit.earlevel && (rabbit.img.y > 105 || rabbit.img.y < 70)) {
 			if (rabbit.h === 0) {
 				(rabbit.img.dir === 'right') ? rabbit.img.y = 70 : rabbit.img.y = 105;
 			} else {
@@ -184,8 +190,13 @@ const rabbit = {
 			}
 		}
 	},
-	health: {
-		level: 20
+	cycleAcrossImage: function() {
+		rabbit.steps++;
+		if (rabbit.steps % 4 === 0) {
+			rabbit.steps = 0;
+			(rabbit.img.z === 7) ? rabbit.img.z = 0 : rabbit.img.z++;
+			rabbit.img.x = rabbit.img.z * rabbit.width;
+		}
 	},
 	gum: {
 		charge: 2000,
@@ -327,7 +338,7 @@ rabbit.draw = function() {
 	context.drawImage(rabbit.image, rabbit.img.x, rabbit.img.y, rabbit.width, rabbit.height, rabbit.x, rabbit.y, rabbit.width, rabbit.height);
 	rabbit.cycleAcrossImage();
 	//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
-}
+}/*
 rabbit.cycleAcrossImage = function() {
 	rabbit.steps++;
 	if (rabbit.steps % 4 === 0) {
@@ -336,7 +347,7 @@ rabbit.cycleAcrossImage = function() {
 		rabbit.img.x = rabbit.img.z * rabbit.width;
 	}
 }
-
+*/
 class Enemy {
 	constructor(x) {
 		this.direction = null;
@@ -363,7 +374,6 @@ class Enemy {
 			end: null
 		}
 		this.jumpUp = function() {
-			console.log('enemy jump');
 			this.jump.active = true;
 			this.v = -this.speed;
 			this.jump.begin = this.y;
@@ -382,7 +392,6 @@ class Enemy {
 			if (this.jump.active) {
 				if (this.y > this.jump.end) {
 					if (this.y < this.jump.end + 20) {
-						console.log('decrement.')
 						if (this.v > 1) this.v *= 0.7;
 					} if (this.v > this.speed) {
 						this.v = this.speed;
@@ -447,6 +456,7 @@ const enemy1 = new Enemy(800);
 game.enemies.push(enemy1);
 
 function gameLoop() {
+	game.scrollAdjust();
 	game.drawBackground();
 	rabbit.adjust();
 	rabbit.draw();
@@ -456,27 +466,32 @@ function gameLoop() {
 
 
 function keyPushed(btn) {
-	if (btn.keyCode === 32 && !rabbit.jump.active) rabbit.jump.up();
-	if (btn.keyCode === 37) {
-		if (rabbit.y < 372) {
+	if (btn.keyCode === 32 && rabbit.y === rabbit.earlevel) rabbit.jump.up(); // SPACE
+	if (btn.keyCode === 37) { // left arrow
+		rabbit.img.dir = 'left';
+		rabbit.h = -rabbit.speed;
+		if (rabbit.y < rabbit.earlevel) {
 			rabbit.img.y = 175;
 		} else {
 			rabbit.img.y = 35;
 		}
-		rabbit.h = -rabbit.speed; 
-		rabbit.img.dir = 'left';
+		//(rabbit.y < game.groundlevel -5) ? rabbit.h = -rabbit.speed * 1.5 : rabbit.h = -rabbit.speed; 
 	}
-	if (btn.keyCode === 39) {
-		if (rabbit.y < 372) {
+	if (btn.keyCode === 39) { // right arrow
+		rabbit.img.dir = 'right';
+		rabbit.h = rabbit.speed;
+		if (rabbit.y < rabbit.earlevel) {
 			rabbit.img.y = 145;
 		} else {
 			rabbit.img.y = 0; 
 		}
-		rabbit.img.dir = 'right';
-		rabbit.h = rabbit.speed;
+		//(rabbit.y < game.groundlevel - 5) ? rabbit.h = rabbit.speed * 1.5 : rabbit.h = rabbit.speed;
 	}
-	if (btn.keyCode === 38 && !rabbit.jump.active) rabbit.jump.up();
-	if (btn.keyCode === 40) rabbit.v = rabbit.speed;
+	if (btn.keyCode === 38 && !rabbit.jump.active && rabbit.y === rabbit.earlevel) rabbit.jump.up();
+	if (btn.keyCode === 40) {
+		if (rabbit.jump.active) rabbit.jump.active = false;
+		if (rabbit.y < game.groundlevel) rabbit.v = rabbit.speed;
+	}
 	if (btn.keyCode === 67 && rabbit.gum.charge > 0 && rabbit.jump.active) {
 		if (!rabbit.gum.spin) rabbit.gum.spin= true;
 		rabbit.gum.doubleFire();
@@ -486,8 +501,9 @@ function keyPushed(btn) {
 }
 
 function keyReleased(btn) {
-	if (btn.keyCode === 37) {
+	if (btn.keyCode === 37 && rabbit.h < 0) {
 		rabbit.h = 0;
+
 		if (rabbit.v === 0) {
 			rabbit.img.y = 105;
 		} else {
@@ -496,7 +512,7 @@ function keyReleased(btn) {
 			}
 		}
 	}
-	if (btn.keyCode === 39) {
+	if (btn.keyCode === 39 && rabbit.h > 0) {
 		rabbit.h = 0;
 		if (rabbit.v === 0) rabbit.img.y = 70;
 	}
