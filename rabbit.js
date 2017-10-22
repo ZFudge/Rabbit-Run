@@ -85,6 +85,7 @@ const game = {
 					//context.drawImage(game.img.terrain, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 					//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
 					game.enemies[enemy].adjust();
+					game.enemies[enemy].beam.adjust(game.enemies[enemy]);
 					game.enemies[enemy].damageCheck();
 				} else {
 					const removeEnemy = game.enemies.indexOf(game.enemies[enemy]);
@@ -130,7 +131,7 @@ const rabbit = {
 		z: 0
 	},
 	health: {
-		level: 20
+		level: 200
 	},
 	adjust: function() {
 		rabbit.jump.adjust()
@@ -205,16 +206,7 @@ const rabbit = {
 		stash: [],
 		speed: 10,
 		size: 3,
-		colors: [
-			'#00A6FF', // blue
-			'#A0F', // purple
-			'#04D608', // green
-			'#FAE900', // yellow
-			'#FA0000', // red
-			'#FFA200', // orange
-			'#0800FF', // dark blue
-			'#F0E', // pink
-		],
+		colors: ['#04D608', '#FAE900', '#FA0000', '#FFA200', '#0800FF', '#F0E'],
 		fire: function() {
 			(game.sounds.gumstep === 6) ? game.sounds.gumstep = 0 : game.sounds.gumstep++;
 			game.sounds.gumblasts[game.sounds.gumstep].play();
@@ -276,27 +268,28 @@ const rabbit = {
 			});
 		},
 		setSpin: function() {
+			const random = (Math.random() - 0.5) / 3;
 			if (rabbit.img.x === 90 || rabbit.img.x === 270) {
 				return [ 
-					[-rabbit.gum.speed, 0], 
-					[rabbit.gum.speed, 0]
+					[-rabbit.gum.speed + random, 0], 
+					[rabbit.gum.speed + random, 0]
 				];
 			} else if (rabbit.img.x === 0 || rabbit.img.x === 180) {
 				return [ 
-					[0, -rabbit.gum.speed], 
-					[0, rabbit.gum.speed] 
+					[0, -rabbit.gum.speed + random], 
+					[0, rabbit.gum.speed + random] 
 				];
 
 			} else {
 				if ( ( rabbit.img.y === 140 && ( rabbit.img.x === 45 || rabbit.img.x === 225 ) ) || ( rabbit.img.y === 175 && ( rabbit.img.x === 135 || rabbit.img.x === 315 )) ) { // //
 					return [  // //
-						[-rabbit.gum.speed/2, rabbit.gum.speed/2], 
-						[rabbit.gum.speed/2, -rabbit.gum.speed/2] 
+						[-rabbit.gum.speed/2 + random, rabbit.gum.speed/2 + random], 
+						[rabbit.gum.speed/2 + random, -rabbit.gum.speed/2 + random] 
 					];
 				} else if ( ( rabbit.img.y === 140 && ( rabbit.img.x === 135 || rabbit.img.x === 315) ) || ( rabbit.img.y === 175 && ( rabbit.img.x === 45 || rabbit.img.x === 225 )) ) {
 					return [  // \\\\\\\\\\\\\\\\
-						[rabbit.gum.speed/2, -rabbit.gum.speed/2],
-						[-rabbit.gum.speed/2, rabbit.gum.speed/2]
+						[rabbit.gum.speed/2 + random, -rabbit.gum.speed/2 + random],
+						[-rabbit.gum.speed/2 + random, rabbit.gum.speed/2 + random]
 					]
 				}
 			}
@@ -365,6 +358,54 @@ class Enemy {
 			steps: 0,
 			x: 0,
 			y: 280
+		}
+		this.beam = {
+			active: false,
+			speed: 7,
+			width: 10,
+			height: 5,
+			enx: this.x,
+			eny: this.y,
+			x: null,
+			y: null,
+			h: null,
+			v: null,
+			draw: function() {
+				context.fillStyle = 'red';
+				context.fillRect(this.x,this.y,this.width,this.height);
+			},
+			blast: function(en) {
+				console.log('blast');
+				//let xd = rabbit.x - this.x;
+				//let yd = rabbit.y - this.y;
+				en.beam.x = en.x + en.width / 2;
+				en.beam.y = en.y + en.height / 2;
+
+				let xd = rabbit.x + rabbit.width / 2 - en.beam.x;
+				let yd = rabbit.y + rabbit.height / 2 - en.beam.y;
+				let zd = Math.abs(xd) + Math.abs(yd);
+
+				let unit = en.beam.speed / zd;
+
+				this.h = xd * unit;
+				this.v = yd * unit;
+
+				this.active = true;
+			},
+			adjust: function(en) {
+				if (this.active) {
+					if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+						this.active = false;
+						return;
+					}
+					console.log('here');
+					this.x += this.h;
+					this.y += this.v;
+					this.draw();
+				} else {
+					this.blast(en);
+				}
+			}
 		}
 		this.jump = {
 			steps: 0,
@@ -492,7 +533,7 @@ function keyPushed(btn) {
 		if (rabbit.jump.active) rabbit.jump.active = false;
 		if (rabbit.y < game.groundlevel) rabbit.v = rabbit.speed;
 	}
-	if (btn.keyCode === 67 && rabbit.gum.charge > 0 && rabbit.jump.active) {
+	if (btn.keyCode === 67 && rabbit.gum.charge > 0) { // C  && rabbit.jump.active
 		if (!rabbit.gum.spin) rabbit.gum.spin= true;
 		rabbit.gum.doubleFire();
 	}
