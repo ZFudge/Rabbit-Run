@@ -269,15 +269,16 @@ const rabbit = {
 		},
 		setSpin: function() {
 			const random = (Math.random() - 0.5) / 3;
+
 			if (rabbit.img.x === 90 || rabbit.img.x === 270) {
 				return [ 
-					[-rabbit.gum.speed + random, 0], 
-					[rabbit.gum.speed + random, 0]
+					[-rabbit.gum.speed + random, 0 + random], 
+					[rabbit.gum.speed + random, 0 + random]
 				];
 			} else if (rabbit.img.x === 0 || rabbit.img.x === 180) {
 				return [ 
-					[0, -rabbit.gum.speed + random], 
-					[0, rabbit.gum.speed + random] 
+					[0 + random, -rabbit.gum.speed + random], 
+					[0 + random, rabbit.gum.speed + random] 
 				];
 
 			} else {
@@ -537,7 +538,7 @@ function keyPushed(btn) {
 		if (!rabbit.gum.spin) rabbit.gum.spin= true;
 		rabbit.gum.doubleFire();
 	}
-	if (btn.keyCode === 70 && rabbit.gum.charge > 0) rabbit.gum.fire();
+	if (btn.keyCode === 70 && rabbit.gum.charge > 0) rabbit.gum.fire();  // F
 	if (btn.keyCode === 81) game.pauseandresume();
 }
 
