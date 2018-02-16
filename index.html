@@ -1,8 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<title>Zach Fudge - Rabbit Run</title>
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="rabbit.css">
 </head>
-<body onload="game.sounds.theme.play()" style="text-align: center;">
+<body>
+	<div id="outer-container">
+		<div id="rabbit-container">
+			<canvas id="rabbit-canvas" height="500" width="600"></canvas>
+			<div id="button-container">
+				<button id="pause" onclick="game.pauseUnpause()">Pause</button>
+				<button id="show-controls" onclick="game.showHideControls()">Controls</button>
+			</div>
+		</div>
+	</div>
 	<script src='rabbit.js'></script>
 </body>
 </html>
