@@ -1,2 +1,5 @@
+.gitignore
+dist
 rabbit.png
 rabbit_2.png
+node_modules
