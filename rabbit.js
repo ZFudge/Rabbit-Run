@@ -1,20 +1,17 @@
 document.addEventListener("keydown",keyPushed);
 document.addEventListener("keyup",keyReleased);
 
-const canvas = document.createElement('canvas');
-canvas.height = 500;
-canvas.width = 900;
-document.body.appendChild(canvas);
+const canvas = document.getElementById('rabbit-canvas');
 let context =  canvas.getContext('2d'); 
 
 const game = {
 	speed: 15,
-	active: true,
+	active: false,
 	groundlevel: 400,
 	edge: {
 		width: 330,
-		left: 330,
-		right: 570
+		left: 250,
+		right: 450
 	},
 	width: 4548,
 	drawBackground: function() {/*
@@ -28,7 +25,7 @@ const game = {
 	drawGrass: function() {
 		context.drawImage(game.img.grass, game.img.x, game.img.y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 	},
-	pauseandresume: function() {
+	pauseUnpause: function() {
 		game.active = !game.active;
 		if (game.active) {
 			loop = setInterval(gameLoop, game.speed)
@@ -106,6 +103,9 @@ const game = {
 			new Audio('audio/gumblast7.wav')
 		],
 		gumstep: 0
+	},
+	showHideControls() {
+		
 	}
 }
 game.img.terrain.src='sprites/level_one.png';
@@ -332,16 +332,8 @@ rabbit.draw = function() {
 	context.drawImage(rabbit.image, rabbit.img.x, rabbit.img.y, rabbit.width, rabbit.height, rabbit.x, rabbit.y, rabbit.width, rabbit.height);
 	rabbit.cycleAcrossImage();
 	//ctx.drawImage(image, innerx, innery, innerWidth, innerHeight, outerx, outery, outerWidth, outerHeight);
-}/*
-rabbit.cycleAcrossImage = function() {
-	rabbit.steps++;
-	if (rabbit.steps % 4 === 0) {
-		rabbit.steps = 0;
-		(rabbit.img.z === 7) ? rabbit.img.z = 0 : rabbit.img.z++;
-		rabbit.img.x = rabbit.img.z * rabbit.width;
-	}
 }
-*/
+
 class Enemy {
 	constructor(x) {
 		this.direction = null;
@@ -376,9 +368,6 @@ class Enemy {
 				context.fillRect(this.x,this.y,this.width,this.height);
 			},
 			blast: function(en) {
-				console.log('blast');
-				//let xd = rabbit.x - this.x;
-				//let yd = rabbit.y - this.y;
 				en.beam.x = en.x + en.width / 2;
 				en.beam.y = en.y + en.height / 2;
 
@@ -399,7 +388,6 @@ class Enemy {
 						this.active = false;
 						return;
 					}
-					console.log('here');
 					this.x += this.h;
 					this.y += this.v;
 					this.draw();
@@ -506,7 +494,6 @@ function gameLoop() {
 	game.drawGrass();
 }
 
-
 function keyPushed(btn) {
 	if (btn.keyCode === 32 && rabbit.y === rabbit.earlevel) rabbit.jump.up(); // SPACE
 	if (btn.keyCode === 37) { // left arrow
@@ -539,7 +526,7 @@ function keyPushed(btn) {
 		rabbit.gum.doubleFire();
 	}
 	if (btn.keyCode === 70 && rabbit.gum.charge > 0) rabbit.gum.fire();  // F
-	if (btn.keyCode === 81) game.pauseandresume();
+	if (btn.keyCode === 81) game.pauseUnpause();
 }
 
 function keyReleased(btn) {
@@ -562,4 +549,4 @@ function keyReleased(btn) {
 	if (btn.keyCode === 67) rabbit.gum.spin = false;
 }
 
-let loop = setInterval(gameLoop,game.speed);
+let loop;
